@@ -314,18 +314,28 @@ out/KERNEL_OBJ/boot-%.img: out/KERNEL_OBJ/initramfs.% out/KERNEL_OBJ/target-dtb.
 		$${MKBOOTIMG_OSV_ARGS} \
 		-o $@
 
+out/KERNEL_OBJ/init_boot-%.img: out/KERNEL_OBJ/initramfs.%
+	eval mkbootimg \
+		--header_version $(KERNEL_BOOTIMAGE_VERSION) \
+		--ramdisk $< \
+		--pagesize $(KERNEL_BOOTIMAGE_PAGE_SIZE) \
+		-o $@
+
 out/KERNEL_OBJ/boot.img: out/KERNEL_OBJ/boot-default.img
 	cp -v $< $@
 
 out/KERNEL_OBJ/recovery.img: out/KERNEL_OBJ/boot-recovery-default.img
 	cp -v $< $@
 
+out/KERNEL_OBJ/init_boot.img: out/KERNEL_OBJ/init_boot-default.img
+	cp -v $< $@
+
 override_dh_auto_configure: debian/control out/KERNEL_OBJ/.config path-override-prepare
 
 ifneq ($(BUILD_SKIP_MODULES),1)
-override_dh_auto_build: out/KERNEL_OBJ/target-dtb.default out/KERNEL_OBJ/boot.img out/KERNEL_OBJ/recovery.img out/KERNEL_OBJ/dtbo.img out/KERNEL_OBJ/vbmeta.img out/modules-stamp out/dtb-stamp
+override_dh_auto_build: out/KERNEL_OBJ/target-dtb.default out/KERNEL_OBJ/boot.img out/KERNEL_OBJ/init_boot.img out/KERNEL_OBJ/recovery.img out/KERNEL_OBJ/dtbo.img out/KERNEL_OBJ/vbmeta.img out/modules-stamp out/dtb-stamp
 else
-override_dh_auto_build: out/KERNEL_OBJ/target-dtb.default out/KERNEL_OBJ/boot.img out/KERNEL_OBJ/recovery.img out/KERNEL_OBJ/dtbo.img out/KERNEL_OBJ/vbmeta.img out/dtb-stamp
+override_dh_auto_build: out/KERNEL_OBJ/target-dtb.default out/KERNEL_OBJ/boot.img out/KERNEL_OBJ/init_boot.img out/KERNEL_OBJ/recovery.img out/KERNEL_OBJ/dtbo.img out/KERNEL_OBJ/vbmeta.img out/dtb-stamp
 endif
 
 kernel_snippet_install:
@@ -349,6 +359,9 @@ endif
 	mkdir -p $(CURDIR)/debian/linux-bootimage-$(KERNEL_RELEASE)/boot
 	cp -v $(KERNEL_OUT)/boot.img $(CURDIR)/debian/linux-bootimage-$(KERNEL_RELEASE)/boot/boot.img-$(KERNEL_RELEASE)
 	cp -v $(KERNEL_OUT)/recovery.img $(CURDIR)/debian/linux-bootimage-$(KERNEL_RELEASE)/boot/recovery.img-$(KERNEL_RELEASE)
+ifeq ($(DEVICE_HAS_INIT_BOOT),1)
+	cp -v $(KERNEL_OUT)/init_boot.img $(CURDIR)/debian/linux-bootimage-$(KERNEL_RELEASE)/boot/init_boot.img-$(KERNEL_RELEASE)
+endif
 ifeq ($(KERNEL_IMAGE_WITH_DTB_OVERLAY),1)
 	cp -v $(KERNEL_OUT)/dtbo.img $(CURDIR)/debian/linux-bootimage-$(KERNEL_RELEASE)/boot/dtbo.img-$(KERNEL_RELEASE)
 endif
