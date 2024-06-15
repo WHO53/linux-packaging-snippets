@@ -244,7 +244,15 @@ out/KERNEL_OBJ/initramfs.lz4:
 		cp -Rv $${OVERLAY_DIR}/* .; \
 		find . | cpio -o -R 0:0 -H newc | lz4 -9 -l > $(BASEDIR)/$@; \
 	else \
-		cp /usr/lib/$(DEB_HOST_MULTIARCH)/halium-generic-initramfs/initrd.img-halium-generic.lz4 $@; \
+		if [ "$(grep "CONFIG_INITRAMFS_SOURCE=\"\"" $(KERNEL_OUT)/.config)" ]; then \
+			cp /usr/lib/$(DEB_HOST_MULTIARCH)/halium-generic-initramfs/initrd.img-halium-generic.lz4 $@; \
+		else \
+			tmpdir=$$(mktemp -d); \
+			cd $${tmpdir}; \
+			lz4 -c -d /usr/lib/$(DEB_HOST_MULTIARCH)/halium-generic-initramfs/initrd.img-halium-generic.lz4 | cpio -i; \
+			find . ! -type d ! -name halium ! -name telnet ! -name init -delete; \
+			find . | cpio -o -R 0:0 -H newc | lz4 -9 -l > $(BASEDIR)/$@; \
+		fi; \
 	fi
 
 out/KERNEL_OBJ/initramfs.recovery-lz4:
